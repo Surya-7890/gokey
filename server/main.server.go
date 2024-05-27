@@ -9,11 +9,13 @@ import (
 type Server struct {
 	listener net.Listener
 	address  string
+	exit     chan struct{}
 }
 
 func NewServer(address string) *Server {
 	return &Server{
 		address: address,
+		exit:    make(chan struct{}),
 	}
 }
 
@@ -25,6 +27,7 @@ func (s *Server) StartServer() {
 	s.listener = listener
 	defer s.listener.Close()
 	go s.AcceptConnections()
+	<-s.exit
 }
 
 func (s *Server) AcceptConnections() {
@@ -45,7 +48,9 @@ func (s *Server) ReadFromConnections(conn net.Conn) {
 		length, err := conn.Read(buffer)
 		if err != nil {
 			if err == io.EOF {
+				fmt.Printf("connection %s closed\n", conn.RemoteAddr().String())
 				conn.Close()
+				break
 			}
 			fmt.Printf("message from %v could not be read\n", conn.RemoteAddr().String())
 			continue
