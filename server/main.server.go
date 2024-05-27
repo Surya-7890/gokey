@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 )
 
 type Server struct {
@@ -56,6 +57,6 @@ func (s *Server) ReadFromConnections(conn net.Conn) {
 			continue
 		}
 		data := buffer[:length]
-		fmt.Println(string(data))
+		HanldeIncomingConnections(conn, strings.Split(strings.TrimSpace(string(data)), " "))
 	}
 }
