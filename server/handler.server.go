@@ -14,6 +14,10 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 	case "CREATE":
 		// create a new table
 		// format: CREATE tablename
+		if len(message) < 2 {
+			conn.Write([]byte("invalid number of arguments\n"))
+			return
+		}
 		_, ok := Peers[conn]
 		if !ok {
 			Peers[conn] = &Peer{
@@ -24,6 +28,10 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 	case "SET":
 		// set key-value pair
 		// format: SET key value tablename
+		if len(message) < 4 {
+			conn.Write([]byte("invalid number of arguments\n"))
+			return
+		}
 		_, ok := Peers[conn]
 		if !ok {
 			Peers[conn] = &Peer{
@@ -34,6 +42,10 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 	case "GET":
 		// get value by pair
 		// format: GET key tablename
+		if len(message) < 3 {
+			conn.Write([]byte("invalid number of arguments\n"))
+			return
+		}
 		_, ok := Peers[conn]
 		if !ok {
 			Peers[conn] = &Peer{
@@ -44,6 +56,10 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 	case "SETEX":
 		// set key-value pair with expiry in milliseconds
 		// format: SET key value tablename expiry
+		if len(message) < 5 {
+			conn.Write([]byte("invalid number of arguments\n"))
+			return
+		}
 		_, ok := Peers[conn]
 		if !ok {
 			Peers[conn] = &Peer{
