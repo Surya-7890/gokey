@@ -11,6 +11,16 @@ var Peers = make(map[net.Conn]*Peer, 10)
 func HanldeIncomingConnections(conn net.Conn, message []string) {
 	// parse incoming messages from connections
 	switch strings.ToUpper(message[0]) {
+	case "CREATE":
+		// create a new table
+		// format: CREATE tablename
+		_, ok := Peers[conn]
+		if !ok {
+			Peers[conn] = &Peer{
+				Conn: conn,
+			}
+		}
+		Peers[conn].CreateTable(message[1])
 	case "SET":
 		// set key-value pair
 		// format: SET key value tablename
@@ -42,7 +52,7 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 		}
 		expiry, err := strconv.Atoi(message[4])
 		if err != nil {
-			conn.Write([]byte("Invalid Time In Seconds"))
+			conn.Write([]byte("Invalid Time In Seconds\n"))
 			return
 		}
 		Peers[conn].SetData(message[1], message[2], message[3], expiry)
@@ -56,5 +66,7 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 			}
 		}
 		Peers[conn].DeleteData(message[1], message[2])
+	default:
+		conn.Write([]byte("invalid options, please try again\n"))
 	}
 }

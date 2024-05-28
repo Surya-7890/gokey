@@ -33,21 +33,37 @@ func (p *Peer) SetData(key, val, database string, expiry int) {
 	}
 }
 
-func (p *Peer) GetData(key, database string) string {
+func (p *Peer) GetData(key, database string) {
 	Map, ok := db[database]
 	if !ok {
-		p.Conn.Write([]byte("invalid database name"))
-		return ""
+		p.Conn.Write([]byte("invalid database name\n"))
+		return
 	}
-	return Map[key]
+	if key == "*" {
+		for key, val := range Map {
+			data := fmt.Sprintf("%s : %s\n", key, val)
+			p.Conn.Write([]byte(data))
+		}
+		return
+	}
+	p.Conn.Write([]byte(Map[key] + "\n"))
 }
 
-func (p *Peer) DeleteData(key, database string) error {
+func (p *Peer) DeleteData(key, database string) {
 	Map, ok := db[database]
 	if !ok {
-		p.Conn.Write([]byte("invalid database name"))
-		return fmt.Errorf("key not found")
+		p.Conn.Write([]byte("invalid database name\n"))
+		return
 	}
 	delete(db, Map[key])
-	return nil
+}
+
+func (p *Peer) CreateTable(database string) {
+	_, ok := db[database]
+	if ok {
+		p.Conn.Write([]byte("database name already exists\n"))
+		return
+	}
+	db[database] = make(map[string]string)
+	p.Conn.Write([]byte("table created\n"))
 }
