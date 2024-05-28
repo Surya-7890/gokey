@@ -28,7 +28,7 @@ func (p *Peer) SetData(key, val, database string, expiry int) {
 	if expiry != 0 {
 		go func() {
 			time.Sleep(time.Duration(expiry) * time.Second)
-			delete(db, Map[key])
+			delete(Map, key)
 		}()
 	}
 }
@@ -55,7 +55,8 @@ func (p *Peer) DeleteData(key, database string) {
 		p.Conn.Write([]byte("invalid database name\n"))
 		return
 	}
-	delete(db, Map[key])
+	delete(Map, key)
+	fmt.Println(Map[key])
 }
 
 func (p *Peer) CreateTable(database string) {
