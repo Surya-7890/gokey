@@ -37,6 +37,7 @@ func (p *Peer) SetData(key, val, database string, expiry int) {
 			delete(Map, key)
 		}()
 	}
+	p.Conn.Write([]byte("success"))
 }
 
 func (p *Peer) GetData(key, database string) {
@@ -67,6 +68,7 @@ func (p *Peer) DeleteData(key, database string) {
 	delete(Map, key)
 	mutex.Lock()
 	fmt.Println(Map[key])
+	p.Conn.Write([]byte("succes"))
 }
 
 func (p *Peer) CreateTable(database string) {
@@ -78,5 +80,5 @@ func (p *Peer) CreateTable(database string) {
 	}
 	db[database] = make(map[string]string)
 	mutex.Unlock()
-	p.Conn.Write([]byte("table created\n"))
+	p.Conn.Write([]byte("success"))
 }
