@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -20,22 +19,24 @@ func NewServer(address string) *Server {
 	}
 }
 
-func (s *Server) StartServer() {
+func (s *Server) StartServer() error {
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	s.listener = listener
 	defer s.listener.Close()
 	go s.AcceptConnections()
+
 	<-s.exit
+
+	return nil
 }
 
 func (s *Server) AcceptConnections() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			fmt.Printf("connection from %v failed\n", conn.RemoteAddr().String())
 			continue
 		}
 		go s.ReadFromConnections(conn)
@@ -49,11 +50,9 @@ func (s *Server) ReadFromConnections(conn net.Conn) {
 		length, err := conn.Read(buffer)
 		if err != nil {
 			if err == io.EOF {
-				fmt.Printf("connection %s closed\n", conn.RemoteAddr().String())
 				conn.Close()
 				break
 			}
-			fmt.Printf("message from %v could not be read\n", conn.RemoteAddr().String())
 			continue
 		}
 		data := buffer[:length]

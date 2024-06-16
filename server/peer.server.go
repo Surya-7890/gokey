@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -65,16 +64,13 @@ func (p *Peer) GetData(key, database string) {
 }
 
 func (p *Peer) DeleteData(key, database string) {
-	mutex.Lock()
 	Map, ok := db[database]
 	if !ok {
 		p.Conn.Write([]byte("invalid database name\n"))
 		return
 	}
 	delete(Map, key)
-	mutex.Lock()
-	fmt.Println(Map[key])
-	p.Conn.Write([]byte("succes"))
+	p.Conn.Write([]byte("success"))
 }
 
 func (p *Peer) CreateTable(database string) {
