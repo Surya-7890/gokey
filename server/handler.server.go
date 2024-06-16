@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var Peers = make(map[net.Conn]*Peer, 10)
@@ -71,7 +72,7 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 			conn.Write([]byte("Invalid Time In Seconds\n"))
 			return
 		}
-		Peers[conn].SetData(message[1], message[2], message[3], expiry)
+		Peers[conn].SetData(message[1], message[2], message[3], time.Duration(expiry)*time.Second)
 	case "DELETE":
 		// delete a pair using the key
 		// format: DELETE key tablename

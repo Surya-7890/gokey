@@ -22,26 +22,31 @@ func NewPeer(conn net.Conn) *Peer {
 	}
 }
 
-func (p *Peer) SetData(key, val, database string, expiry int) {
+func (p *Peer) SetData(key, val, database string, expiry time.Duration) {
 	mutex.Lock()
+	defer mutex.Unlock()
+
 	Map, ok := db[database]
 	if !ok {
 		p.Conn.Write([]byte("invalid database name"))
 		return
 	}
 	Map[key] = val
-	mutex.Unlock()
 	if expiry != 0 {
-		go func() {
-			time.Sleep(time.Duration(expiry) * time.Second)
+		go func(key string) {
+			time.Sleep(expiry)
+			mutex.Lock()
+			defer mutex.Unlock()
 			delete(Map, key)
-		}()
+		}(key)
 	}
 	p.Conn.Write([]byte("success"))
 }
 
 func (p *Peer) GetData(key, database string) {
 	mutex.Lock()
+	defer mutex.Unlock()
+
 	Map, ok := db[database]
 	if !ok {
 		p.Conn.Write([]byte("invalid database name\n"))
@@ -59,11 +64,13 @@ func (p *Peer) GetData(key, database string) {
 		p.Conn.Write(data_map)
 		return
 	}
-	mutex.Unlock()
 	p.Conn.Write([]byte(Map[key] + "\n"))
 }
 
 func (p *Peer) DeleteData(key, database string) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	Map, ok := db[database]
 	if !ok {
 		p.Conn.Write([]byte("invalid database name\n"))
@@ -75,12 +82,13 @@ func (p *Peer) DeleteData(key, database string) {
 
 func (p *Peer) CreateTable(database string) {
 	mutex.Lock()
+	defer mutex.Unlock()
+
 	_, ok := db[database]
 	if ok {
 		p.Conn.Write([]byte("database name already exists\n"))
 		return
 	}
 	db[database] = make(map[string]string)
-	mutex.Unlock()
 	p.Conn.Write([]byte("success"))
 }
