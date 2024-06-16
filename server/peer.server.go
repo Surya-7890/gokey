@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
@@ -48,10 +49,15 @@ func (p *Peer) GetData(key, database string) {
 		return
 	}
 	if key == "*" {
+		data := make(map[string]string)
 		for key, val := range Map {
-			data := fmt.Sprintf("%s : %s\n", key, val)
-			p.Conn.Write([]byte(data))
+			data[key] = val
 		}
+		data_map, err := json.Marshal(data)
+		if err != nil {
+			p.Conn.Write([]byte(err.Error()))
+		}
+		p.Conn.Write(data_map)
 		return
 	}
 	mutex.Unlock()
