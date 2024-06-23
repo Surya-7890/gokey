@@ -11,8 +11,14 @@ type Peer struct {
 	Conn net.Conn
 }
 
+type Message struct {
+	val       string
+	expiry    *time.Duration
+	createdAt *time.Time
+}
+
 var (
-	db    = make(map[string]map[string]string, 5)
+	db    = make(map[string]map[string]*Message, 5)
 	mutex = sync.Mutex{}
 )
 
@@ -22,25 +28,37 @@ func NewPeer(conn net.Conn) *Peer {
 	}
 }
 
-func (p *Peer) SetData(key, val, database string, expiry time.Duration) {
+func (p *Peer) SetData(key, val, database string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	Map, ok := db[database]
 	if !ok {
-		p.Conn.Write([]byte("invalid database name"))
+		p.Conn.Write([]byte("invalid database name\n"))
 		return
 	}
-	Map[key] = val
-	if expiry != 0 {
-		go func(key string) {
-			time.Sleep(expiry)
-			mutex.Lock()
-			defer mutex.Unlock()
-			delete(Map, key)
-		}(key)
+	Map[key] = &Message{
+		val: val,
 	}
-	p.Conn.Write([]byte("success"))
+	p.Conn.Write([]byte("success\n"))
+}
+
+func (p *Peer) SetDataWithExpiration(key, val, database string, expiry time.Duration) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	Map, ok := db[database]
+	if !ok {
+		p.Conn.Write([]byte("invalid database name\n"))
+		return
+	}
+	now := time.Now()
+	Map[key] = &Message{
+		val:       val,
+		expiry:    &expiry,
+		createdAt: &now,
+	}
+	p.Conn.Write([]byte("success\n"))
 }
 
 func (p *Peer) GetData(key, database string) {
@@ -52,19 +70,35 @@ func (p *Peer) GetData(key, database string) {
 		p.Conn.Write([]byte("invalid database name\n"))
 		return
 	}
+
 	if key == "*" {
 		data := make(map[string]string)
 		for key, val := range Map {
-			data[key] = val
+			if val.expiry != nil {
+				duration := time.Since(*val.createdAt)
+				if duration > *val.expiry {
+					delete(Map, key)
+					continue
+				}
+			}
+			data[key] = val.val
 		}
 		data_map, err := json.Marshal(data)
 		if err != nil {
-			p.Conn.Write([]byte(err.Error()))
+			p.Conn.Write([]byte(err.Error() + "\n"))
 		}
-		p.Conn.Write(data_map)
+		p.Conn.Write([]byte(data_map))
+		p.Conn.Write([]byte("\n"))
 		return
 	}
-	p.Conn.Write([]byte(Map[key] + "\n"))
+	if Map[key].expiry != nil {
+		if time.Since(*Map[key].createdAt) < *Map[key].expiry {
+			p.Conn.Write([]byte(Map[key].val + "\n"))
+			return
+		}
+	}
+	delete(Map, key)
+	p.Conn.Write([]byte("\n"))
 }
 
 func (p *Peer) DeleteData(key, database string) {
@@ -77,7 +111,7 @@ func (p *Peer) DeleteData(key, database string) {
 		return
 	}
 	delete(Map, key)
-	p.Conn.Write([]byte("success"))
+	p.Conn.Write([]byte("success\n"))
 }
 
 func (p *Peer) CreateTable(database string) {
@@ -89,6 +123,6 @@ func (p *Peer) CreateTable(database string) {
 		p.Conn.Write([]byte("database name already exists\n"))
 		return
 	}
-	db[database] = make(map[string]string)
-	p.Conn.Write([]byte("success"))
+	db[database] = make(map[string]*Message)
+	p.Conn.Write([]byte("success\n"))
 }

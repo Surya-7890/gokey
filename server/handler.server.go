@@ -39,7 +39,7 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 				Conn: conn,
 			}
 		}
-		Peers[conn].SetData(message[1], message[2], message[3], 0)
+		Peers[conn].SetData(message[1], message[2], message[3])
 	case "GET":
 		// get value by pair
 		// format: GET key tablename
@@ -72,7 +72,7 @@ func HanldeIncomingConnections(conn net.Conn, message []string) {
 			conn.Write([]byte("Invalid Time In Seconds\n"))
 			return
 		}
-		Peers[conn].SetData(message[1], message[2], message[3], time.Duration(expiry)*time.Second)
+		Peers[conn].SetDataWithExpiration(message[1], message[2], message[3], time.Duration(expiry)*time.Second)
 	case "DELETE":
 		// delete a pair using the key
 		// format: DELETE key tablename
