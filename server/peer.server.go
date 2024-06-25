@@ -96,8 +96,9 @@ func (p *Peer) GetData(key, database string) {
 			p.Conn.Write([]byte(Map[key].val + "\n"))
 			return
 		}
+		delete(Map, key)
 	}
-	delete(Map, key)
+	p.Conn.Write([]byte(Map[key].val))
 	p.Conn.Write([]byte("\n"))
 }
 
